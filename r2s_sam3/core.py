@@ -77,15 +77,17 @@ def decode_gt(rgb):
     return out
 
 
-def validate_labels(images, root, split):
+def validate_labels(images, root, split, progress_callback=None):
     labels = {}
-    for image in images:
+    for index, image in enumerate(images, 1):
         gt_path = label_for(root, split, image)
         with Image.open(image) as im, Image.open(gt_path) as gt_im:
             if im.size != gt_im.size:
                 raise ValueError(f"GT size mismatch: {image} vs {gt_path}")
             decode_gt(np.asarray(gt_im.convert("RGB")))
         labels[image.name] = gt_path
+        if progress_callback is not None and (index == 1 or index % 100 == 0 or index == len(images)):
+            progress_callback(index, len(images))
     return labels
 
 

@@ -10,6 +10,13 @@ Use Python 3.10–3.12 and a compatible PyTorch/CUDA installation. From this dir
 bash scripts/setup_env.sh
 ```
 
+If an existing environment fails with `ModuleNotFoundError: No module named 'pkg_resources'`, repair it without reinstalling PyTorch or SAM3:
+
+```bash
+.venv-r2s-sam3/bin/python -m pip install 'setuptools<82'
+.venv-r2s-sam3/bin/python -c 'from sam3 import build_sam3_image_model; print("SAM3 import OK")'
+```
+
 The script installs the upstream SAM3 revision `f1647e8d0c1d280991f4d1b7d974c2704537fe66` into a separate venv. For a server with a specific CUDA driver, install the appropriate PyTorch build in that venv before running the script, or reinstall it afterward. Keep the `sam3.pt` checkpoint outside Git.
 
 ## One command
@@ -37,6 +44,8 @@ A local one-image real-model smoke run:
 ```
 
 CUDA is the default; use `--device cpu` if GPU memory is insufficient. The model stays at 1008 pixels and all 22 prompts run in either case. `--resume` reuses completed class-ID PNGs only when the configuration and input fingerprint match. To evaluate saved predictions again, use the `evaluate` command. Metrics appear in `OUTPUT/evaluation/metrics.json`, per-class CSV and confusion matrices alongside up to 12 qualitative examples. A zero-union class is excluded from the mean and represented by `null`.
+
+The CLI prints flushed progress during image scanning, GT validation (first image and every 100 images), checkpoint hashing, model loading, image encoding, every four text prompts, mask saving, and evaluation. To keep a log while watching output, run from this directory with `set -o pipefail` and append `2>&1 | tee -a runs/sam3_test.log` to the command. Keep the log outside the `--output` directory so it does not make a fresh output look like a previous run.
 
 When evaluating a subset separately, pass the same `--max-images N` used for inference. The pinned upstream revision has CUDA positional caches and a fused BF16 ViT layer; the CPU path adapts those internals at runtime without changing upstream source or the checkpoint.
 
